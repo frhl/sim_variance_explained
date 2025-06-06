@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Genetic Architecture Explorer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            min-height: 80vh;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 1px solid #e9ecef;
+        }
+
+        .control-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .control-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-group {
+            display: flex;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .toggle-option {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .toggle-option.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .slider-group {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            outline: none;
+            appearance: none;
+            margin-bottom: 10px;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .genotype-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .genotype-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .wildtype { background: #3498db; }
+        .heterozygous { background: #f39c12; }
+        .homozygous { background: #e74c3c; }
+
+        .total-display {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            color: #495057;
+            border: 2px solid #e9ecef;
+        }
+
+        .hwe-status {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            border: 2px solid #e9ecef;
+        }
+
+        .plot-area {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .variance-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .variance-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .variance-bar {
+            height: 40px;
+            border-radius: 20px;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .variance-additive {
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .variance-nonadditive {
+            background: #e74c3c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .variance-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: 500px;
+            position: relative;
+        }
+
+        .info-display {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .preset-btn {
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            background: white;
+            color: #495057;
+            font-size: 0.85em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .hidden { display: none; }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧬 Interactive Genetic Architecture Explorer</h1>
+            <p>Visualizing Additive vs. Non-additive Genetic Effects</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <!-- Input Method Toggle -->
+                <div class="control-section">
+                    <h3>🔬 Input Method</h3>
+                    <div class="toggle-group">
+                        <button class="toggle-option active" data-method="hwe">HWE Mode</button>
+                        <button class="toggle-option" data-method="custom">Custom Counts</button>
+                    </div>
+                </div>
+
+                <!-- HWE Controls -->
+                <div class="control-section" id="hwe-controls">
+                    <h3>📊 HWE Parameters</h3>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>Minor Allele Frequency</span>
+                            <span id="maf-value">0.30</span>
+                        </div>
+                        <input type="range" class="slider" id="maf-slider" min="0.01" max="0.50" step="0.01" value="0.30">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>Population Size</span>
+                            <span id="pop-value">10,000</span>
+                        </div>
+                        <input type="range" class="slider" id="pop-slider" min="1000" max="50000" step="500" value="10000">
+                    </div>
+                </div>
+
+                <!-- Custom Count Controls -->
+                <div class="control-section hidden" id="custom-controls">
+                    <h3>🔢 Custom Genotype Counts</h3>
+                    <div class="genotype-control">
+                        <div class="genotype-icon wildtype"></div>
+                        <div style="flex: 1;">
+                            <div class="slider-label">
+                                <span>Wildtype (0/0)</span>
+                                <span id="aa-value">200,000</span>
+                            </div>
+                            <input type="range" class="slider" id="aa-slider" min="0" max="200000" step="1000" value="200000">
+                        </div>
+                    </div>
+                    <div class="genotype-control">
+                        <div class="genotype-icon heterozygous"></div>
+                        <div style="flex: 1;">
+                            <div class="slider-label">
+                                <span>Heterozygous (0/1)</span>
+                                <span id="ab-value">100</span>
+                            </div>
+                            <input type="range" class="slider" id="ab-slider" min="0" max="10000" step="10" value="100">
+                        </div>
+                    </div>
+                    <div class="genotype-control">
+                        <div class="genotype-icon homozygous"></div>
+                        <div style="flex: 1;">
+                            <div class="slider-label">
+                                <span>Homozygous (1/1)</span>
+                                <span id="bb-value">5</span>
+                            </div>
+                            <input type="range" class="slider" id="bb-slider" min="0" max="100" step="1" value="5">
+                        </div>
+                    </div>
+                    <div class="total-display" id="total-display">
+                        Total N = 200,105
+                    </div>
+                </div>
+
+                <!-- Phenotypic Effects -->
+                <div class="control-section">
+                    <h3>🎯 Phenotypic Effects</h3>
+                    
+                    <!-- Quick Presets -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-weight: 500; margin-bottom: 10px; color: #495057;">Quick Presets:</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+                            <button class="preset-btn" data-preset="additive">Additive</button>
+                            <button class="preset-btn" data-preset="recessive">Recessive</button>
+                            <button class="preset-btn" data-preset="partial">Partial Recessive</button>
+                            <button class="preset-btn" data-preset="overdominance">Overdominance</button>
+                        </div>
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>Wildtype Effect</span>
+                            <span id="effect-wt-value">0.00</span>
+                        </div>
+                        <input type="range" class="slider" id="effect-wt-slider" min="-2" max="2" step="0.01" value="0">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>Heterozygous Effect</span>
+                            <span id="effect-het-value">0.01</span>
+                        </div>
+                        <input type="range" class="slider" id="effect-het-slider" min="-2" max="2" step="0.01" value="0.01">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>Homozygous Effect</span>
+                            <span id="effect-hom-value">1.00</span>
+                        </div>
+                        <input type="range" class="slider" id="effect-hom-slider" min="-2" max="2" step="0.01" value="1">
+                    </div>
+                </div>
+
+                <!-- HWE Results -->
+                <div class="control-section">
+                    <h3>📈 HWE Test Results</h3>
+                    <div class="hwe-status" id="hwe-status">
+                        HWE χ² = 0.000<br>
+                        HWE p-value = 1.000<br>
+                        HWE not violated
+                    </div>
+                </div>
+            </div>
+
+            <div class="plot-area">
+                <!-- Variance Decomposition -->
+                <div class="variance-section">
+                    <div class="variance-title">Variance Explained</div>
+                    <div class="variance-bar">
+                        <div class="variance-additive" id="variance-add">80.0%</div>
+                        <div class="variance-nonadditive" id="variance-nonadd">20.0%</div>
+                    </div>
+                    <div class="variance-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #3498db;"></div>
+                            <span>Additive</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #e74c3c;"></div>
+                            <span>Non-additive</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Chart -->
+                <div class="chart-container">
+                    <canvas id="main-chart"></canvas>
+                </div>
+
+                <!-- Info Display -->
+                <div class="info-display" id="info-display">
+                    Counts: [200000, 100, 5] | HWE: p=0.000e+00 (VIOLATED) | Model: [0.00, 0.01, 1.00]<br>
+                    Allele frequencies: p=1.000, q=0.000
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let chart = null;
+        let currentMethod = 'hwe';
+        
+        // Function definitions first
+        function toggleInputMethod() {
+            const hweControls = document.getElementById('hwe-controls');
+            const customControls = document.getElementById('custom-controls');
+            
+            if (currentMethod === 'hwe') {
+                hweControls.classList.remove('hidden');
+                customControls.classList.add('hidden');
+            } else {
+                hweControls.classList.add('hidden');
+                customControls.classList.remove('hidden');
+            }
+        }
+
+        function updateSliderDisplay(slider) {
+            const valueElement = document.getElementById(slider.id.replace('-slider', '-value'));
+            if (!valueElement) return;
+
+            let value = parseFloat(slider.value);
+            let displayValue;
+
+            if (slider.id === 'pop-slider' || slider.id.includes('-slider')) {
+                if (value >= 1000) {
+                    displayValue = (value / 1000).toFixed(0) + ',000';
+                } else {
+                    displayValue = value.toLocaleString();
+                }
+            } else if (slider.id.startsWith('effect-')) {
+                displayValue = value.toFixed(2);
+            } else if (slider.id === 'maf-slider') {
+                displayValue = value.toFixed(2);
+            } else {
+                displayValue = value.toLocaleString();
+            }
+
+            valueElement.textContent = displayValue;
+
+            // Update total for custom counts
+            if (slider.id.includes('aa-') || slider.id.includes('ab-') || slider.id.includes('bb-')) {
+                updateTotalDisplay();
+            }
+        }
+
+        function updateTotalDisplay() {
+            const aa = parseInt(document.getElementById('aa-slider').value);
+            const ab = parseInt(document.getElementById('ab-slider').value);
+            const bb = parseInt(document.getElementById('bb-slider').value);
+            const total = aa + ab + bb;
+            document.getElementById('total-display').textContent = `Total N = ${total.toLocaleString()}`;
+        }
+
+        function getGenotypeCounts() {
+            if (currentMethod === 'hwe') {
+                const maf = parseFloat(document.getElementById('maf-slider').value);
+                const pop = parseInt(document.getElementById('pop-slider').value);
+                const p = 1 - maf;
+                const q = maf;
+                
+                const aa = Math.round(pop * p * p);
+                const ab = Math.round(pop * 2 * p * q);
+                const bb = Math.round(pop * q * q);
+                
+                return { aa, ab, bb };
+            } else {
+                return {
+                    aa: parseInt(document.getElementById('aa-slider').value),
+                    ab: parseInt(document.getElementById('ab-slider').value),
+                    bb: parseInt(document.getElementById('bb-slider').value)
+                };
+            }
+        }
+
+        function getPhenotypicEffects() {
+            return {
+                wt: parseFloat(document.getElementById('effect-wt-slider').value),
+                het: parseFloat(document.getElementById('effect-het-slider').value),
+                hom: parseFloat(document.getElementById('effect-hom-slider').value)
+            };
+        }
+
+        function calculateHWE(aa, ab, bb) {
+            const total = aa + ab + bb;
+            if (total === 0) return { pValue: 1, chiSq: 0, p: 0.5, q: 0.5 };
+
+            const p = (2 * aa + ab) / (2 * total);
+            const q = 1 - p;
+
+            const expAA = total * p * p;
+            const expAB = total * 2 * p * q;
+            const expBB = total * q * q;
+
+            const chiSq = ((aa - expAA) ** 2) / Math.max(expAA, 1e-10) +
+                         ((ab - expAB) ** 2) / Math.max(expAB, 1e-10) +
+                         ((bb - expBB) ** 2) / Math.max(expBB, 1e-10);
+
+            // Simple chi-square p-value approximation
+            const pValue = chiSq > 3.841 ? 0.0001 : 1 - (chiSq / 3.841) * 0.95;
+
+            return { pValue, chiSq, p, q };
+        }
+
+        function calculateVarianceExplained(aa, ab, bb, effects) {
+            const total = aa + ab + bb;
+            if (total === 0) return { additive: 1, nonadditive: 0 };
+
+            // Create data arrays
+            const genotypes = [];
+            const phenotypes = [];
+            
+            for (let i = 0; i < aa; i++) { genotypes.push(0); phenotypes.push(effects.wt); }
+            for (let i = 0; i < ab; i++) { genotypes.push(1); phenotypes.push(effects.het); }
+            for (let i = 0; i < bb; i++) { genotypes.push(2); phenotypes.push(effects.hom); }
+
+            if (genotypes.length === 0) return { additive: 1, nonadditive: 0 };
+
+            // Calculate means
+            const meanGeno = genotypes.reduce((a, b) => a + b, 0) / genotypes.length;
+            const meanPheno = phenotypes.reduce((a, b) => a + b, 0) / phenotypes.length;
+
+            // Calculate variances and covariance
+            let varGeno = 0, varPheno = 0, covar = 0;
+            for (let i = 0; i < genotypes.length; i++) {
+                const genoDeviation = genotypes[i] - meanGeno;
+                const phenoDeviation = phenotypes[i] - meanPheno;
+                varGeno += genoDeviation ** 2;
+                varPheno += phenoDeviation ** 2;
+                covar += genoDeviation * phenoDeviation;
+            }
+            varGeno /= genotypes.length;
+            varPheno /= phenotypes.length;
+            covar /= genotypes.length;
+
+            // R-squared for additive model
+            const rSquaredAdd = varPheno > 0 ? (covar ** 2) / (varGeno * varPheno) : 0;
+            
+            // Simple approximation for non-additive
+            const rSquaredNonAdd = Math.max(0, Math.min(1 - rSquaredAdd, 0.5));
+
+            return { 
+                additive: Math.max(0, Math.min(1, rSquaredAdd)), 
+                nonadditive: Math.max(0, Math.min(1, rSquaredNonAdd))
+            };
+        }
+
+        function updateVarianceDisplay(variance) {
+            const total = variance.additive + variance.nonadditive;
+            if (total === 0) {
+                variance.additive = 1;
+                variance.nonadditive = 0;
+            }
+
+            const addPercent = (variance.additive / (variance.additive + variance.nonadditive)) * 100;
+            const nonAddPercent = 100 - addPercent;
+
+            const addElement = document.getElementById('variance-add');
+            const nonAddElement = document.getElementById('variance-nonadd');
+
+            addElement.style.width = addPercent + '%';
+            nonAddElement.style.width = nonAddPercent + '%';
+            
+            addElement.textContent = addPercent.toFixed(1) + '%';
+            nonAddElement.textContent = nonAddPercent.toFixed(1) + '%';
+
+            // Hide elements if percentage is too small
+            addElement.style.display = addPercent < 5 ? 'none' : 'flex';
+            nonAddElement.style.display = nonAddPercent < 5 ? 'none' : 'flex';
+        }
+
+        function updateInfoDisplay(counts, hwe, effects) {
+            const hweStatus = hwe.pValue < 0.05 ? 
+                `p=${hwe.pValue.toExponential(2)} (VIOLATED)` : 
+                `p=${hwe.pValue.toFixed(3)}`;
+            
+            const info = `Counts: [${counts.aa.toLocaleString()}, ${counts.ab.toLocaleString()}, ${counts.bb.toLocaleString()}] | HWE: ${hweStatus} | Model: [${effects.wt.toFixed(2)}, ${effects.het.toFixed(2)}, ${effects.hom.toFixed(2)}]<br>Allele frequencies: p=${hwe.p.toFixed(3)}, q=${hwe.q.toFixed(3)}`;
+            
+            document.getElementById('info-display').innerHTML = info;
+        }
+
+        function updateHWEStatus(hwe) {
+            const status = `HWE χ² = ${hwe.chiSq.toFixed(3)}\nHWE p-value = ${hwe.pValue.toExponential(3)}\n${hwe.pValue < 0.05 ? 'HWE VIOLATED' : 'HWE not violated'}`;
+            document.getElementById('hwe-status').textContent = status;
+        }
+
+        function updateChart(counts, effects, variance) {
+            const ctx = document.getElementById('main-chart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            const total = counts.aa + counts.ab + counts.bb;
+            const frequencies = [
+                counts.aa / total,
+                counts.ab / total,
+                counts.bb / total
+            ];
+
+            // Calculate proper linear regression line
+            const genotypes = [];
+            const phenotypes = [];
+            
+            // Add all data points weighted by their frequency
+            for (let i = 0; i < counts.aa; i++) { genotypes.push(0); phenotypes.push(effects.wt); }
+            for (let i = 0; i < counts.ab; i++) { genotypes.push(1); phenotypes.push(effects.het); }
+            for (let i = 0; i < counts.bb; i++) { genotypes.push(2); phenotypes.push(effects.hom); }
+
+            let slope = 0, intercept = effects.wt;
+            
+            if (genotypes.length > 1) {
+                // Calculate regression slope and intercept
+                const n = genotypes.length;
+                const sumX = genotypes.reduce((a, b) => a + b, 0);
+                const sumY = phenotypes.reduce((a, b) => a + b, 0);
+                const sumXY = genotypes.reduce((sum, x, i) => sum + x * phenotypes[i], 0);
+                const sumXX = genotypes.reduce((sum, x) => sum + x * x, 0);
+                
+                const meanX = sumX / n;
+                const meanY = sumY / n;
+                
+                if (sumXX - n * meanX * meanX !== 0) {
+                    slope = (sumXY - n * meanX * meanY) / (sumXX - n * meanX * meanX);
+                    intercept = meanY - slope * meanX;
+                }
+            }
+
+            chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Real Effects',
+                        data: [
+                            { x: 0, y: effects.wt },
+                            { x: 1, y: effects.het },
+                            { x: 2, y: effects.hom }
+                        ],
+                        backgroundColor: '#3498db',
+                        borderColor: '#2c3e50',
+                        borderWidth: 2,
+                        pointRadius: function(context) {
+                            const freq = frequencies[context.dataIndex];
+                            return Math.max(5, Math.min(25, freq * 500));
+                        },
+                        showLine: true,
+                        tension: 0
+                    }, {
+                        label: 'Additive Model',
+                        data: [
+                            { x: -0.1, y: intercept - 0.1 * slope },
+                            { x: 2.1, y: intercept + 2.1 * slope }
+                        ],
+                        backgroundColor: 'transparent',
+                        borderColor: '#e74c3c',
+                        borderWidth: 3,
+                        borderDash: [10, 5],
+                        pointRadius: 0,
+                        showLine: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Genetic Architecture: Genotype vs Phenotype',
+                            font: { size: 16, weight: 'bold' },
+                            color: '#495057'
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: { usePointStyle: true }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Genotype (Number of Variant Alleles)',
+                                font: { weight: 'bold' }
+                            },
+                            min: -0.2,
+                            max: 2.2,
+                            ticks: { stepSize: 1 }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Phenotypic Effect',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        function updateAll() {
+            const counts = getGenotypeCounts();
+            const effects = getPhenotypicEffects();
+            const hwe = calculateHWE(counts.aa, counts.ab, counts.bb);
+            const variance = calculateVarianceExplained(counts.aa, counts.ab, counts.bb, effects);
+
+            updateVarianceDisplay(variance);
+            updateChart(counts, effects, variance);
+            updateInfoDisplay(counts, hwe, effects);
+            updateHWEStatus(hwe);
+        }
+
+        function applyPreset(preset) {
+            const wtSlider = document.getElementById('effect-wt-slider');
+            const hetSlider = document.getElementById('effect-het-slider');
+            const homSlider = document.getElementById('effect-hom-slider');
+
+            // Set values based on preset
+            switch(preset) {
+                case 'additive':
+                    // Perfect additive: 0, 1, 2
+                    wtSlider.value = 0;
+                    hetSlider.value = 1;
+                    homSlider.value = 2;
+                    break;
+                case 'recessive':
+                    // Mendelian recessive: 0, 0, 2
+                    wtSlider.value = 0;
+                    hetSlider.value = 0;
+                    homSlider.value = 2;
+                    break;
+                case 'partial':
+                    // Partially recessive: 0, 0.5, 2
+                    wtSlider.value = 0;
+                    hetSlider.value = 0.5;
+                    homSlider.value = 2;
+                    break;
+                case 'overdominance':
+                    // Overdominance: 0, 2, 0
+                    wtSlider.value = 0;
+                    hetSlider.value = 2;
+                    homSlider.value = 0;
+                    break;
+            }
+
+            // Update displays and recalculate
+            updateSliderDisplay(wtSlider);
+            updateSliderDisplay(hetSlider);
+            updateSliderDisplay(homSlider);
+            updateAll();
+
+            // Visual feedback
+            const button = document.querySelector(`[data-preset="${preset}"]`);
+            button.style.background = '#667eea';
+            button.style.color = 'white';
+            setTimeout(() => {
+                button.style.background = '';
+                button.style.color = '';
+            }, 200);
+        }
+
+        function initializeEventListeners() {
+            // Method toggle
+            document.querySelectorAll('.toggle-option').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMethod = this.dataset.method;
+                    toggleInputMethod();
+                    updateAll();
+                });
+            });
+
+            // Preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    applyPreset(this.dataset.preset);
+                });
+            });
+
+            // All sliders
+            document.querySelectorAll('.slider').forEach(slider => {
+                slider.addEventListener('input', function() {
+                    updateSliderDisplay(this);
+                    updateAll();
+                });
+                updateSliderDisplay(slider);
+            });
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            updateAll();
+        });
+    </script>
+    </script>
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Phenotypic Effect',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        function applyPreset(preset) {
+            const wtSlider = document.getElementById('effect-wt-slider');
+            const hetSlider = document.getElementById('effect-het-slider');
+            const homSlider = document.getElementById('effect-hom-slider');
+
+            // Set values based on preset
+            switch(preset) {
+                case 'additive':
+                    // Perfect additive: 0, 1, 2
+                    wtSlider.value = 0;
+                    hetSlider.value = 1;
+                    homSlider.value = 2;
+                    break;
+                case 'recessive':
+                    // Mendelian recessive: 0, 0, 2
+                    wtSlider.value = 0;
+                    hetSlider.value = 0;
+                    homSlider.value = 2;
+                    break;
+                case 'partial':
+                    // Partially recessive: 0, 0.5, 2
+                    wtSlider.value = 0;
+                    hetSlider.value = 0.5;
+                    homSlider.value = 2;
+                    break;
+                case 'overdominance':
+                    // Overdominance: 0, 2, 0
+                    wtSlider.value = 0;
+                    hetSlider.value = 2;
+                    homSlider.value = 0;
+                    break;
+            }
+
+            // Update displays and recalculate
+            updateSliderDisplay(wtSlider);
+            updateSliderDisplay(hetSlider);
+            updateSliderDisplay(homSlider);
+            updateAll();
+
+            // Visual feedback
+            const button = document.querySelector(`[data-preset="${preset}"]`);
+            button.style.background = '#667eea';
+            button.style.color = 'white';
+            setTimeout(() => {
+                button.style.background = '';
+                button.style.color = '';
+            }, 200);
+        }
+    </script>
+</body>
+</html>

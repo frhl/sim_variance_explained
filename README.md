@@ -1,44 +1,59 @@
-# Interactive Genetic Architecture Visualization
+# Interactive Genetic Architecture Explorer
 
-This Shiny application complements the research paper **"Deviations from genetic additivity driven by rare variants at biobank scale"** by Lassen et al., allowing users to explore different genetic architectures and visualize deviations from additivity.
+This Shiny app goes along with our paper **"Deviations from genetic additivity driven by rare variants at biobank scale"** by Lassen et al. It lets you play around with different genetic architectures and see what happens when things don't follow simple additive patterns.
 
-## Features
+## What it does
 
-- **Interactive Controls**: Adjust minor allele frequency (0.01-0.5), phenotypic effects for each genotype, and population size
-- **Dose-response Plot**: Shows relationship between genotype (0, 1, 2 copies) and phenotypic effect with additive model overlay
-- **Variance Decomposition**: Displays proportion of variance explained by additive vs. non-additive components
+- **Two ways to set up your data**: 
+  - **HWE Mode**: The usual way, assuming Hardy-Weinberg equilibrium
+  - **Custom Counts**: Set your own genotype counts (no HWE required!)
+- **HWE Testing**: Shows you in real-time if your population is violating HWE assumptions
+- **Pretty plots**: Visualizes how genotype relates to phenotype, plus shows you when additive models break down
+- **Variance breakdown**: See how much variance comes from additive vs non-additive effects
 
-## Key Genetic Architectures
+## The main genetic patterns you can explore
 
-1. **Additive**: Heterozygous effect = half homozygous effect (additive model fits perfectly)
-2. **Partially Recessive**: Heterozygous effect between 0 and homozygous effect (mixed variance)  
-3. **Mendelian Recessive**: Heterozygous effect = 0 (additive model fails, especially at low MAF)
+1. **Additive**: Het effect is half the homozygote effect - boring but common
+2. **Partially Recessive**: Hets have some effect, but homozygotes have disproportionately more
+3. **Mendelian Recessive**: Hets do nothing, only homozygotes matter - this breaks additive models badly
 
-## Example Settings
+## Fun things to try
 
-**Rare Recessive Disease (MAF = 0.01)**
+**Rare disease scenario (like in our paper)**
 ```
-Wildtype: 0, Heterozygous: 0, Homozygous: 2
+Set custom counts: 200,000 normals, 100 hets, 5 homozygotes
+Effects: [0, 0, 2]
+```
+This is what real rare variant data looks like in biobanks!
+
+**Breaking HWE on purpose**
+```
+Try: 180,000 normals, 1,000 hets, 1,000 homozygotes  
+```
+Watch the app tell you "HWE VIOLATED" - this is why we needed new methods!
+
+**Regular trait that's kinda recessive**
+```
+Use HWE mode with MAF=0.3 and effects [0, 0.5, 2]
 ```
 
-**Common Partially Recessive Trait (MAF = 0.3)**
-```
-Wildtype: 0, Heterozygous: 0.5, Homozygous: 2
-```
-
-## Installation & Usage
+## How to run it
 
 ```r
-install.packages(c("shiny", "ggplot2", "dplyr", "patchwork"))
-shinyApp(ui = ui, server = server)
+install.packages(c("shiny", "ggplot2", "dplyr", "patchwork", "bslib"))
+# Then just run the code!
 ```
 
-## Research Connection
+## Why this matters for our research
 
-This tool illustrates key findings from the paper:
-- Why rare recessive variants are difficult to detect with additive models
-- How genetic architecture affects variance partitioning  
-- The critical relationship between allele frequency and statistical power
+The whole point of our paper was that existing methods assume HWE, but rare variants often violate this. This app shows you:
+
+- Why you can't just use allele frequencies when HWE doesn't hold
+- How badly additive models fail for rare recessive stuff  
+- What our orthogonal encoding actually captures (the red vs blue bars)
+- Why detecting rare variant effects is so hard in the first place
+
+Basically, if you want to understand why we had to develop new methods, play around with this for a bit!
 
 ## Citation
 
