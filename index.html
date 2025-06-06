@@ -284,6 +284,12 @@
             color: #667eea;
         }
 
+        .preset-btn:active {
+            background: #667eea;
+            color: white;
+            transform: scale(0.98);
+        }
+
         .hidden { display: none; }
 
         @media (max-width: 1024px) {
@@ -461,7 +467,7 @@
         let chart = null;
         let currentMethod = 'hwe';
         
-        // Function definitions first
+        // Function definitions
         function toggleInputMethod() {
             const hweControls = document.getElementById('hwe-controls');
             const customControls = document.getElementById('custom-controls');
@@ -498,7 +504,6 @@
 
             valueElement.textContent = displayValue;
 
-            // Update total for custom counts
             if (slider.id.includes('aa-') || slider.id.includes('ab-') || slider.id.includes('bb-')) {
                 updateTotalDisplay();
             }
@@ -556,7 +561,6 @@
                          ((ab - expAB) ** 2) / Math.max(expAB, 1e-10) +
                          ((bb - expBB) ** 2) / Math.max(expBB, 1e-10);
 
-            // Simple chi-square p-value approximation
             const pValue = chiSq > 3.841 ? 0.0001 : 1 - (chiSq / 3.841) * 0.95;
 
             return { pValue, chiSq, p, q };
@@ -566,7 +570,6 @@
             const total = aa + ab + bb;
             if (total === 0) return { additive: 1, nonadditive: 0 };
 
-            // Create data arrays
             const genotypes = [];
             const phenotypes = [];
             
@@ -576,11 +579,9 @@
 
             if (genotypes.length === 0) return { additive: 1, nonadditive: 0 };
 
-            // Calculate means
             const meanGeno = genotypes.reduce((a, b) => a + b, 0) / genotypes.length;
             const meanPheno = phenotypes.reduce((a, b) => a + b, 0) / phenotypes.length;
 
-            // Calculate variances and covariance
             let varGeno = 0, varPheno = 0, covar = 0;
             for (let i = 0; i < genotypes.length; i++) {
                 const genoDeviation = genotypes[i] - meanGeno;
@@ -590,13 +591,10 @@
                 covar += genoDeviation * phenoDeviation;
             }
             varGeno /= genotypes.length;
-            varPheno /= phenotypes.length;
+            varPheno /= genotypes.length;
             covar /= genotypes.length;
 
-            // R-squared for additive model
             const rSquaredAdd = varPheno > 0 ? (covar ** 2) / (varGeno * varPheno) : 0;
-            
-            // Simple approximation for non-additive
             const rSquaredNonAdd = Math.max(0, Math.min(1 - rSquaredAdd, 0.5));
 
             return { 
@@ -624,7 +622,6 @@
             addElement.textContent = addPercent.toFixed(1) + '%';
             nonAddElement.textContent = nonAddPercent.toFixed(1) + '%';
 
-            // Hide elements if percentage is too small
             addElement.style.display = addPercent < 5 ? 'none' : 'flex';
             nonAddElement.style.display = nonAddPercent < 5 ? 'none' : 'flex';
         }
@@ -658,11 +655,9 @@
                 counts.bb / total
             ];
 
-            // Calculate proper linear regression line
             const genotypes = [];
             const phenotypes = [];
             
-            // Add all data points weighted by their frequency
             for (let i = 0; i < counts.aa; i++) { genotypes.push(0); phenotypes.push(effects.wt); }
             for (let i = 0; i < counts.ab; i++) { genotypes.push(1); phenotypes.push(effects.het); }
             for (let i = 0; i < counts.bb; i++) { genotypes.push(2); phenotypes.push(effects.hom); }
@@ -670,7 +665,6 @@
             let slope = 0, intercept = effects.wt;
             
             if (genotypes.length > 1) {
-                // Calculate regression slope and intercept
                 const n = genotypes.length;
                 const sumX = genotypes.reduce((a, b) => a + b, 0);
                 const sumY = phenotypes.reduce((a, b) => a + b, 0);
@@ -777,41 +771,34 @@
             const hetSlider = document.getElementById('effect-het-slider');
             const homSlider = document.getElementById('effect-hom-slider');
 
-            // Set values based on preset
             switch(preset) {
                 case 'additive':
-                    // Perfect additive: 0, 1, 2
                     wtSlider.value = 0;
                     hetSlider.value = 1;
                     homSlider.value = 2;
                     break;
                 case 'recessive':
-                    // Mendelian recessive: 0, 0, 2
                     wtSlider.value = 0;
                     hetSlider.value = 0;
                     homSlider.value = 2;
                     break;
                 case 'partial':
-                    // Partially recessive: 0, 0.5, 2
                     wtSlider.value = 0;
                     hetSlider.value = 0.5;
                     homSlider.value = 2;
                     break;
                 case 'overdominance':
-                    // Overdominance: 0, 2, 0
                     wtSlider.value = 0;
                     hetSlider.value = 2;
                     homSlider.value = 0;
                     break;
             }
 
-            // Update displays and recalculate
             updateSliderDisplay(wtSlider);
             updateSliderDisplay(hetSlider);
             updateSliderDisplay(homSlider);
             updateAll();
 
-            // Visual feedback
             const button = document.querySelector(`[data-preset="${preset}"]`);
             button.style.background = '#667eea';
             button.style.color = 'white';
@@ -822,7 +809,6 @@
         }
 
         function initializeEventListeners() {
-            // Method toggle
             document.querySelectorAll('.toggle-option').forEach(btn => {
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
@@ -833,14 +819,12 @@
                 });
             });
 
-            // Preset buttons
             document.querySelectorAll('.preset-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     applyPreset(this.dataset.preset);
                 });
             });
 
-            // All sliders
             document.querySelectorAll('.slider').forEach(slider => {
                 slider.addEventListener('input', function() {
                     updateSliderDisplay(this);
@@ -850,76 +834,10 @@
             });
         }
         
-        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             initializeEventListeners();
             updateAll();
         });
-    </script>
-    </script>
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Phenotypic Effect',
-                                font: { weight: 'bold' }
-                            }
-                        }
-                    },
-                    interaction: {
-                        intersect: false
-                    }
-                }
-            });
-        }
-
-        function applyPreset(preset) {
-            const wtSlider = document.getElementById('effect-wt-slider');
-            const hetSlider = document.getElementById('effect-het-slider');
-            const homSlider = document.getElementById('effect-hom-slider');
-
-            // Set values based on preset
-            switch(preset) {
-                case 'additive':
-                    // Perfect additive: 0, 1, 2
-                    wtSlider.value = 0;
-                    hetSlider.value = 1;
-                    homSlider.value = 2;
-                    break;
-                case 'recessive':
-                    // Mendelian recessive: 0, 0, 2
-                    wtSlider.value = 0;
-                    hetSlider.value = 0;
-                    homSlider.value = 2;
-                    break;
-                case 'partial':
-                    // Partially recessive: 0, 0.5, 2
-                    wtSlider.value = 0;
-                    hetSlider.value = 0.5;
-                    homSlider.value = 2;
-                    break;
-                case 'overdominance':
-                    // Overdominance: 0, 2, 0
-                    wtSlider.value = 0;
-                    hetSlider.value = 2;
-                    homSlider.value = 0;
-                    break;
-            }
-
-            // Update displays and recalculate
-            updateSliderDisplay(wtSlider);
-            updateSliderDisplay(hetSlider);
-            updateSliderDisplay(homSlider);
-            updateAll();
-
-            // Visual feedback
-            const button = document.querySelector(`[data-preset="${preset}"]`);
-            button.style.background = '#667eea';
-            button.style.color = 'white';
-            setTimeout(() => {
-                button.style.background = '';
-                button.style.color = '';
-            }, 200);
-        }
     </script>
 </body>
 </html>
